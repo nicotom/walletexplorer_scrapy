@@ -1,0 +1,7 @@
+name: walletexplorer
+channels:
+    - conda-forge
+dependencies:
+
+- python=3.6.8
+- scrapy=1.5.2
