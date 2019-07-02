@@ -2,4 +2,4 @@
 
 source activate walletexplorer
 cd exchange_addresses
-scrapy crawl exchange_addresses -t json -o - -a sample=3 > addresses.json
+scrapy crawl exchange_addresses -t json -o - > addresses.json
