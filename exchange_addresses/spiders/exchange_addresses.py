@@ -10,9 +10,9 @@ class QuotesSpider(scrapy.Spider):
     def parse(self, response):
         number_of_exchanges = len(response.xpath('//*[@id="main"]/table/tr/td[1]/ul/li').extract())
         for exchange in range(1, number_of_exchanges + 1):
-            sample = getattr(self, 'sample', None)
-            if sample is not None:
-                if exchange > int(sample):
+            n_exchanges = getattr(self, 'n_exchanges', None)
+            if n_exchanges is not None:
+                if exchange > int(n_exchanges):
                     break
             number_of_subexchanges = len(response.xpath(
                 f'//*[@id="main"]/table/tr/td[1]/ul/li[{exchange}]/a').extract())
@@ -23,7 +23,7 @@ class QuotesSpider(scrapy.Spider):
                 absolute_url = QuotesSpider.start_urls[0] + link[0] + '/addresses'
                 exchange_name = response.xpath(
                     f'//*[@id="main"]/table/tr/td[1]/ul/li[{exchange}]/a[{1}]/text()').extract()[0]
-                yield scrapy.Request(
+                yield response.follow(
                     absolute_url,
                     callback=self.parse_addresses,
                     meta={
@@ -36,6 +36,13 @@ class QuotesSpider(scrapy.Spider):
         addresses = response.xpath('//*[@id="main"]/table/tr[*]/td[1]/a/text()').getall()
         yield {
             'exchange_name': response.meta.get('exchange_name'),
-            'link': response.meta.get('url'),
+            'url': response.meta.get('url'),
             'addresses': addresses
         }
+        next_page_url = response.xpath('//*[@id="main"]/div[2]/a[contains(text(),"Next")]/@href').get()
+        n_pages = getattr(self, 'n_pages', None)
+        if int(next_page_url[-1]) > int(n_pages):
+            return
+        modified_meta = response.meta
+        modified_meta['url'] = QuotesSpider.start_urls[0] + next_page_url
+        yield response.follow(next_page_url, self.parse_addresses, meta=modified_meta)
