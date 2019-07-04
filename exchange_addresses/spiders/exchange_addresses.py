@@ -30,15 +30,15 @@ class QuotesSpider(scrapy.Spider):
             if n_wallets:
                 if wallet > int(n_wallets):
                     break
+            wallet_name = response.xpath(
+                f'//*[@id="main"]/table/tr/td[{wallet_type}]/ul/li[{wallet}]/a[{1}]/text()').extract()[0]
+            self.logger.info('Querying wallet: "%s"' % (wallet_name))
             number_of_subwallets = len(response.xpath(
                 f'//*[@id="main"]/table/tr/td[{wallet_type}]/ul/li[{wallet}]/a').extract())
             for sub_wallet in range(1, number_of_subwallets + 1):
-
                 link = response.xpath(
                         f'//*[@id="main"]/table/tr/td[{wallet_type}]/ul/li[{wallet}]/a[{sub_wallet}]/@href').extract()
                 absolute_url = QuotesSpider.start_urls[0] + link[0] + '/addresses'
-                wallet_name = response.xpath(
-                    f'//*[@id="main"]/table/tr/td[{wallet_type}]/ul/li[{wallet}]/a[{1}]/text()').extract()[0]
                 yield response.follow(
                     absolute_url,
                     callback=self.parse_addresses,
@@ -58,6 +58,8 @@ class QuotesSpider(scrapy.Spider):
             'addresses': addresses
         }
         next_page_url = response.xpath('//*[@id="main"]/div[2]/a[contains(text(),"Next")]/@href').get()
+        if not next_page_url:
+            return
         n_pages = getattr(self, 'n_pages', None)
         if n_pages:
             if int(next_page_url[-1]) > int(n_pages):
